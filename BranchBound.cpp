@@ -27,7 +27,7 @@ int beneficio_disponible;
 
 
 bool ordenar(pair< pair<int,int>, pair<int,int> > a, pair< pair<int,int>, pair<int,int> > b){
-	return (a.ss.ss > b.ss.ss);
+	return (a.ss.ss - a.ss.ff > b.ss.ss - b.ss.ff);
 }
 
 int calcular_beneficio(vector<int> ciclo,vector< vector< pair<int,int> > > grafo) {
@@ -45,7 +45,7 @@ int obtener_max_beneficio(vector< vector< pair<int,int> > > grafo){
 	for(int i = 0; i < grafo.size(); i++){
 		for(int j = i+1; j < grafo.size(); j++){
 			if(grafo[i][j].ff != -1){
-				beneficio += grafo[i][j].ss;
+				beneficio += max(0,grafo[i][j].ss-grafo[i][j].ff);
 			}
 		}
 	}
@@ -71,7 +71,7 @@ bool existe_ciclo_negativo(vector<int> ciclo, vector< vector< pair<int,int> > > 
 	pair<int,int> lado,lado1,lado2;
 	vector<int> ciclo_aux;
 	int beneficio;
-	for(int i = 1; i < ciclo.size()-1; i++){
+	for(int i = 0; i < ciclo.size()-1; i++){
 		ciclo_aux.clear();
 		lado = mp(ciclo[i],i);
 		ciclo_aux.push_back(lado.ff);
@@ -92,12 +92,9 @@ bool existe_ciclo_negativo(vector<int> ciclo, vector< vector< pair<int,int> > > 
 bool ciclo_negativo(pair< pair<int,int>, pair<int,int> > arista, vector<int> sol_parcial, 
 					vector< vector< pair<int,int> > > grafo){
 	sol_parcial.push_back(arista.ff.ff);
-	//sol_parcial.push_back(arista.ff.ss);
 	if(existe_ciclo_negativo(sol_parcial,grafo)){
-		//printf("Forma ciclo negativo con la arista: %d %d\n",arista.ff.ff,arista.ff.ss);
 		return true;
 	}
-	//printf("La porqueria no forma ciclo negativo\n");
 	return false;
 }
 
@@ -114,7 +111,6 @@ bool esta_en_lado_sol_parcial(pair< pair<int,int>, pair<int,int> > arista, vecto
 			contador++;
 		}
 	}
-	//printf("El contador en esta en lado es: %d\n",contador);
 	if(contador == 0){
 		return false;
 	}
@@ -131,9 +127,25 @@ bool esta_en_lado_sol_parcial(pair< pair<int,int>, pair<int,int> > arista, vecto
 	}
 }
 
-bool forma_ciclo(vector<int> sol_parcial){
-	if(sol_parcial[0] == sol_parcial[sol_parcial.size()-1]){
-		return true;
+bool existe_ciclo(vector<int> ciclo, vector< vector< pair<int,int> > > grafo, pair<int,int> &lugar){
+	pair<int,int> lado,lado1,lado2;
+	vector<int> ciclo_aux;
+	int beneficio;
+	for(int i = 0; i < ciclo.size()-1; i++){
+		ciclo_aux.clear();
+		lado = mp(ciclo[i],i);
+		ciclo_aux.push_back(lado.ff);
+		for(int j = i+1; j < ciclo.size(); j++){
+			lado2 = mp(ciclo[j],j);
+			ciclo_aux.push_back(lado2.ff);
+			if(lado.ff == lado2.ff){
+				//printf("%d %d ; %d %d\n",lado.ff,lado.ss,lado2.ff,lado2.ss);
+				lugar.ff = ciclo[lado.ss];
+				lugar.ss = ciclo[lado.ss+1];
+				//printf("%d %d\n",lugar.ff,lugar.ss);
+				return true;
+			}
+		}
 	}
 	return false;
 }
@@ -149,11 +161,14 @@ bool buscar_arista(vector< pair< pair<int,int>, pair<int,int> > > lista_suc, pai
 			arista = mp(vertices,mp(grafo[l1][l2].ff,grafo[l1][l2].ss));
 			return true;
 		}
+		
 		else if(sol_parcial[i] = l2 && sol_parcial[i+1] == l1){
 			arista = mp(vertices,mp(grafo[l1][l2].ff,grafo[l1][l2].ss));	
 			return true;
 		}
+		
 	}
+	return false;
 	*/
 	for(int i = 0; i < lista_suc.size(); i++){
 		if(lista_suc[i].ff == vertices){
@@ -169,20 +184,24 @@ bool repite_ciclo(vector< pair< pair<int,int>, pair<int,int> > > lista_suc, pair
                   vector<int> sol_parcial, vector< vector< pair<int,int> > > grafo){
 	pair< pair<int,int>, pair<int,int> > aux;
 	pair<int,int> aux2;
+	pair<int,int> aux3;
 	sol_parcial.push_back(arista.ff.ff);
-	//sol_parcial.push_back(arista.ff.ss);
-	if(forma_ciclo(sol_parcial)){
-		aux2 = mp(sol_parcial[1],sol_parcial[0]);
-		if( buscar_arista(lista_suc,aux,aux2,grafo) ){
+	if(existe_ciclo(sol_parcial,grafo,aux3)){
+		lista_suc = obtener_lista_de_sucesores(arista.ff.ff, grafo);
+		if( buscar_arista(lista_suc,aux,aux3,grafo)){
 			if((arista.ss.ss - arista.ss.ff) < (aux.ss.ss - aux.ss.ff)){
 				return false;
 			}
+			else{
+				return true;
+			}
 		}
 		else{
-			return true;
+			return false;
 		}
 	}
 	return false;
+
 }
 
 bool cumple_acotamiento(pair< pair<int,int>, pair<int,int> > arista,
@@ -203,25 +222,23 @@ void dfs(vector< vector< pair<int,int> > > grafo){
 	vector< pair< pair<int,int>, pair<int,int> > > sucesores;
 	pair<int,int> last;
 	if(v == 1){
+		printf("La solucion parcial hasta ahora es:  \n");
+		for(int i = 0; i < sol_parcial.size(); i++){	
+			printf("%d ", sol_parcial[i]);
+		}
+		printf("\n");
+		printf("Su costo es: %d\n",calcular_beneficio(sol_parcial,grafo));
+		printf("La mejorn solucion hasta ahora es:  \n");
+		for(int i = 0; i < mejor_sol.size(); i++){
+			printf("%d ", mejor_sol[i]);
+		}
+		printf("\n");
+		printf("Su costo es: %d\n",calcular_beneficio(mejor_sol,grafo));
 		if(calcular_beneficio(sol_parcial,grafo) > calcular_beneficio(mejor_sol,grafo)){
 			mejor_sol = sol_parcial;
 		}
 	}
-
-	printf("La mejorn solucion hasta ahora es:  \n");
-	for(int i = 0; i < mejor_sol.size(); i++){
-		printf("%d ", mejor_sol[i]);
-	}
-	printf("\n");
-	printf("Su costo es: %d\n",calcular_beneficio(mejor_sol,grafo));
-
-
-	//printf("La solucion parcial hasta ahora es:  \n");
-	//for(int i = 0; i < sol_parcial.size(); i++){	
-	//	printf("%d ", sol_parcial[i]);
-	//}
-	//printf("\n");
-	//printf("Su costo es: %d\n",calcular_beneficio(sol_parcial,grafo));	
+				
 
 
 	sucesores = obtener_lista_de_sucesores(v,grafo);
@@ -229,23 +246,24 @@ void dfs(vector< vector< pair<int,int> > > grafo){
 	//for(int i = 0; i < sucesores.size(); i++){
 	//	printf("%d %d %d %d\n",sucesores[i].ff.ff,sucesores[i].ff.ss,sucesores[i].ss.ff,sucesores[i].ss.ss);
 	//}
-
+	//printf("Indicentes a %d: \n",v);
 	for(int i = 0; i < sucesores.size(); i++){
 		if(!ciclo_negativo(sucesores[i],sol_parcial,grafo) && !esta_en_lado_sol_parcial(sucesores[i],sol_parcial)
-			&& cumple_acotamiento(sucesores[i],sol_parcial,grafo)){
+			&& !repite_ciclo(sucesores,sucesores[i],sol_parcial,grafo) && cumple_acotamiento(sucesores[i],sol_parcial,grafo)){
 			sol_parcial.push_back(sucesores[i].ff.ff);
 			sol2.push_back(sucesores[i]);
 			//sol_parcial.push_back(sucesores[i].ff.ss);
 			beneficio_disponible = beneficio_disponible - max(0,(sucesores[i].ss.ss - sucesores[i].ss.ff));
 			dfs(grafo);
 		}
+		//sucesores.pop_back();
 	}
 	last = mp(sol_parcial[sol_parcial.size()-1],sol_parcial[sol_parcial.size()-2]);
 	sol_parcial.pop_back();
 	//sol_parcial.pop_back();
 	beneficio_disponible = beneficio_disponible + max(0, sol2[sol2.size()-1].ss.ss - sol2[sol2.size()-1].ss.ff);
 	sol2.pop_back();
-	printf("El beneficio disponible es: %d\n",beneficio_disponible);
+	//printf("El beneficio disponible es: %d\n",beneficio_disponible);
 }
 
 
@@ -317,7 +335,19 @@ int main(int argc, const char **argv){
 	sol_parcial.push_back(1);
 	mejor_sol = sol_inicial;
 	beneficio_disponible = obtener_max_beneficio(grafo);
+	vector< pair< pair<int,int>, pair<int,int> > > suc;
+	for(int i= 0; i<mejor_sol.size(); i++){
+		printf("%d ",mejor_sol[i]);
+	}
+	printf("\n");
+	printf("Su costo es: %d\n",calcular_beneficio(mejor_sol,grafo));
 	dfs(grafo);
+	for(int i= 0; i<mejor_sol.size(); i++){
+		printf("%d ",mejor_sol[i]);
+	}
+	printf("\n");
+	printf("Su costo es: %d\n",calcular_beneficio(mejor_sol,grafo));
+	//existe_ciclo(mejor_sol,grafo);
 }
 		
 	
