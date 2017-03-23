@@ -190,10 +190,10 @@ bool repite_ciclo(vector< pair< pair<int,int>, pair<int,int> > > lista_suc, pair
 		lista_suc = obtener_lista_de_sucesores(arista.ff.ff, grafo);
 		if( buscar_arista(lista_suc,aux,aux3,grafo)){
 			if((arista.ss.ss - arista.ss.ff) < (aux.ss.ss - aux.ss.ff)){
-				return false;
+				return true;
 			}
 			else{
-				return true;
+				return false;
 			}
 		}
 		else{
@@ -201,7 +201,6 @@ bool repite_ciclo(vector< pair< pair<int,int>, pair<int,int> > > lista_suc, pair
 		}
 	}
 	return false;
-
 }
 
 bool cumple_acotamiento(pair< pair<int,int>, pair<int,int> > arista,
