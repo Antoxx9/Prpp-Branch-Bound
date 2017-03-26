@@ -208,6 +208,7 @@ bool cumple_acotamiento(pair< pair<int,int>, pair<int,int> > arista,
 	int beneficio = arista.ss.ss - arista.ss.ff;
 	int beneficio_parcial = calcular_beneficio(sol_parcial,grafo) + beneficio;
 	int max_beneficio = beneficio_disponible - max(0, beneficio) + beneficio_parcial;
+	//printf("max: %d ; mejor: %d\n",max_beneficio,calcular_beneficio(mejor_sol,grafo));
 	if(max_beneficio <= calcular_beneficio(mejor_sol,grafo)){
 		return false;
 	}
